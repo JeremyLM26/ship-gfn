@@ -1,0 +1,68 @@
+seed: ${trial_id}
+trial_id: 0
+project_name: GFN-Potts-Boltzmann
+version: v0.0.1
+
+# Directories for loading and storing data
+data_dir: /home/jeremylm/links/scratch/makri_gfn/GFN_extend/data/
+exp_name: potts
+job_name: null
+timestamp: ${now:%Y-%m-%d_%H-%M-%S}
+log_dir: ${data_dir}${exp_name} # directory where data is stored
+data_path: 'data/'
+num_samples: 20
+num_of_elements: 435 # not used
+prefix: "/home/jeremylm/links/scratch/makri_gfn/GFN_extend/data/"
+pathsum_input_file: null # passed as an argument at runtime
+dynamics_executable: null # passed as an argument at runtime
+starting_paths_input_file1: null # passed as an argument at runtime (extending GFN only)
+starting_paths_input_file2: null # passed as an argument at runtime (extending GFN only)
+
+# Hydra runs from the working directory (GFN/data/potts) and saves hydra outputs from each run
+# in a separate directory determined by the timestamp
+hydra:
+  run:
+    dir: ${log_dir}/${timestamp}
+  sweep:
+    dir: ${log_dir}
+    subdir: ${timestamp}
+
+
+dataset:
+  _target_: lib.dataset.dna.PottsDataset
+  path: /home/jeremylm/links/scratch/makri_gfn/GFN_extend/data/training_set_numerical.mat
+
+tokenizer:
+  _target_: lib.utils.tokenizers_modified.ToyTokenizer
+  pathsum_input_file: ${pathsum_input_file}
+
+gfn:
+  random_action_prob: 0.1
+  max_len: null # passed as an argument at runtime
+  min_len: null # passed as an argument at runtime
+  batch_size: 20 # keep same as num_samples for now
+  reward_min: 1e-20
+  sampling_temp: 1
+  train_steps: 10000
+  pi_lr: 0.0001
+  z_lr: 0.1
+  wd: 0.0001
+  gen_clip: 10
+  sample_beta: 1
+  eval_freq: 20
+  val_batch_size: 20
+  eval_batch_size: 20 # keep same as num_samples for now
+  eval_samples: 20
+  offline_gamma: 0
+  use_boltzmann: True
+  
+  model:
+    _target_: lib.model.transformer.GFNTransformer
+    max_len: null # needs to be at least other max_len + 2 - updated dynamically in code
+    vocab_size: null # placeholder - num_actions + 4 if min_length = max_length
+    num_actions: null # placeholder - tokenizer vocab length + 1
+    num_hid: 128
+    num_layers: 6
+    num_head: 8
+    dropout: 0
+    partition_init: 32
